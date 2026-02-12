@@ -171,39 +171,44 @@ async def main():
         sys.exit(1)
 
     today = datetime.now(timezone.utc).strftime("%b %d, %Y")
-    digest_sections = [f"🔍 Telegram Digest — {today}\n"]
-    has_findings = False
+    digest_sections = [f"Telegram Digest -- {today}\n"]
+    skipped_count = 0
 
     for group in GROUPS:
-        print(f"\n📌 Scanning: {group['name']}")
+        print(f"\n  Scanning: {group['name']}")
         messages = await fetch_messages(telegram, group)
         print(f"   Found {len(messages)} messages")
 
         if not messages:
-            digest_sections.append(f"📌 {group['name']}\n• No messages in the last {SCAN_HOURS}h\n")
+            skipped_count += 1
             continue
 
         messages_text = format_messages_for_gpt(messages)
         analysis = analyze_with_gpt(group["name"], messages_text)
         analysis = replace_msg_id_links(analysis, group)
 
-        if "nothing notable" not in analysis.lower():
-            has_findings = True
+        if "nothing notable" in analysis.lower():
+            skipped_count += 1
+            continue
 
-        digest_sections.append(f"📌 {group['name']}\n{analysis}\n")
+        digest_sections.append(f"{group['name']}\n{analysis}\n")
 
     await telegram.disconnect()
+
+    if skipped_count > 0:
+        channel_word = "channel" if skipped_count == 1 else "channels"
+        digest_sections.append(f"Nothing relevant in {skipped_count} other {channel_word}.")
 
     digest = "\n".join(digest_sections)
     print("\n--- Digest ---")
     print(digest)
 
-    if has_findings:
+    if len(digest_sections) > 2:
+        # There are actual findings (header + at least one group + skipped summary)
         send_to_slack(digest)
     else:
-        print("ℹ️  No notable findings today — skipping Slack message")
-        # Still send a brief note so you know it ran
-        send_to_slack(f"🔍 Telegram Digest — {today}\n\nNo notable findings today across {len(GROUPS)} groups.")
+        print("No notable findings today -- skipping detailed digest")
+        send_to_slack(f"Telegram Digest -- {today}\n\nNo notable findings today across {len(GROUPS)} groups.")
 
 
 if __name__ == "__main__":
