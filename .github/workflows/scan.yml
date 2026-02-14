@@ -8,6 +8,7 @@ on:
 jobs:
   scan:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -20,3 +21,17 @@ jobs:
 
       - name: Run scanner
         run: python scanner.py
+
+      - name: Run enricher
+        if: hashFiles('leads.json') != ''
+        run: python enricher.py
+
+      - name: Upload leads data as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: leads-${{ github.run_number }}
+          path: |
+            leads.json
+            enriched_leads.json
+          retention-days: 30

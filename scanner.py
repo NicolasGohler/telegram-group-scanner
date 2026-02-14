@@ -8,6 +8,7 @@ identify founder intros & project announcements, and sends a digest to Slack.
 import asyncio
 import json
 import os
+import re
 import sys
 from datetime import datetime, timedelta, timezone
 
@@ -54,6 +55,56 @@ For each relevant item, return a concise one-line summary in this format:
 If nothing notable is found, respond with exactly: Nothing notable today
 
 Be selective — ignore casual chat, questions, memes, support requests, and general discussion."""
+
+
+def extract_urls(text):
+    """Extract all URLs from text using regex."""
+    return re.findall(r'https?://[^\s<>\"\'\)]+', text)
+
+
+STRUCTURED_LEADS_PROMPT = """You are given a GPT analysis of Telegram group messages and the raw messages themselves.
+
+Extract each identified lead into structured JSON. Return a JSON array where each element has:
+- "sender_username": the @username of the sender (without @)
+- "summary": the one-line summary from the analysis
+- "message_id": the numeric message ID
+- "relevant_message_text": the relevant portion of the raw message (max 500 chars)
+
+Only include leads that appear in the analysis (not messages marked as irrelevant).
+If the analysis says "Nothing notable today", return an empty array: []
+
+Return ONLY valid JSON, no markdown fences or extra text."""
+
+
+def extract_structured_leads(analysis_text, messages_text, group_name):
+    """Use GPT-4o-mini to extract structured lead data from the analysis."""
+    client = OpenAI(api_key=OPENAI_API_KEY)
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {"role": "system", "content": STRUCTURED_LEADS_PROMPT},
+            {
+                "role": "user",
+                "content": (
+                    f"Group: {group_name}\n\n"
+                    f"Analysis:\n{analysis_text}\n\n"
+                    f"Raw messages:\n{messages_text}"
+                ),
+            },
+        ],
+        temperature=0.1,
+        max_tokens=2000,
+    )
+    raw = response.choices[0].message.content.strip()
+    # Strip markdown fences if present
+    if raw.startswith("```"):
+        raw = re.sub(r'^```(?:json)?\s*', '', raw)
+        raw = re.sub(r'\s*```$', '', raw)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        print(f"  ⚠️  Failed to parse structured leads for {group_name}")
+        return []
 
 
 def build_telegram_link(group, msg_id):
@@ -125,7 +176,6 @@ def analyze_with_gpt(group_name, messages_text):
 
 def replace_msg_id_links(analysis_text, group):
     """Replace MSG_ID:{id} placeholders with actual Telegram deep links."""
-    import re
 
     def replacer(match):
         msg_id = match.group(1)
@@ -171,8 +221,10 @@ async def main():
         sys.exit(1)
 
     today = datetime.now(timezone.utc).strftime("%b %d, %Y")
+    scan_timestamp = datetime.now(timezone.utc).isoformat()
     digest_sections = [f"Telegram Digest -- {today}\n"]
     skipped_count = 0
+    all_leads = []
 
     for group in GROUPS:
         print(f"\n  Scanning: {group['name']}")
@@ -185,6 +237,27 @@ async def main():
 
         messages_text = format_messages_for_gpt(messages)
         analysis = analyze_with_gpt(group["name"], messages_text)
+
+        # Build a lookup of raw messages by ID for URL extraction
+        messages_by_id = {m["id"]: m for m in messages}
+
+        # Extract structured leads before replacing MSG_IDs with links
+        if "nothing notable" not in analysis.lower():
+            structured = extract_structured_leads(analysis, messages_text, group["name"])
+            for lead in structured:
+                msg_id = lead.get("message_id")
+                raw_msg = messages_by_id.get(int(msg_id)) if msg_id else None
+                raw_text = raw_msg["text"] if raw_msg else lead.get("relevant_message_text", "")
+                all_leads.append({
+                    "id": f"{group['name']}_{msg_id}",
+                    "group_name": group["name"],
+                    "sender_username": lead.get("sender_username", "Unknown"),
+                    "message_text": raw_text,
+                    "summary": lead.get("summary", ""),
+                    "telegram_link": build_telegram_link(group, msg_id) if msg_id else "",
+                    "urls_in_message": extract_urls(raw_text),
+                })
+
         analysis = replace_msg_id_links(analysis, group)
 
         if "nothing notable" in analysis.lower():
@@ -194,6 +267,12 @@ async def main():
         digest_sections.append(f"{group['name']}\n{analysis}\n")
 
     await telegram.disconnect()
+
+    # Write leads.json for the enricher
+    leads_data = {"scan_date": scan_timestamp, "leads": all_leads}
+    with open("leads.json", "w") as f:
+        json.dump(leads_data, f, indent=2)
+    print(f"\n📝 Wrote {len(all_leads)} leads to leads.json")
 
     if skipped_count > 0:
         channel_word = "channel" if skipped_count == 1 else "channels"
