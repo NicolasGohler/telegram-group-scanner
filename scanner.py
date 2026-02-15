@@ -30,8 +30,9 @@ with open("config.json") as f:
     CONFIG = json.load(f)
 
 GROUPS = CONFIG["groups"]
-SCAN_HOURS = CONFIG.get("scan_hours", 24)
+SCAN_HOURS = CONFIG.get("scan_hours", 48)
 MODEL = CONFIG.get("model", "gpt-4o-mini")
+IGNORE_USERNAMES = {u.lower() for u in CONFIG.get("ignore_usernames", [])}
 
 GPT_SYSTEM_PROMPT = """You are an analyst scanning Telegram group messages for a venture investor.
 
@@ -134,6 +135,8 @@ async def fetch_messages(client, group):
                 sender_name = getattr(msg.sender, "username", None) or getattr(
                     msg.sender, "first_name", "Unknown"
                 )
+            if sender_name.lower() in IGNORE_USERNAMES:
+                continue
             if msg.text and len(msg.text) >= 50:
                 messages.append(
                     {
