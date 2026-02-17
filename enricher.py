@@ -321,7 +321,7 @@ SYNTHESIS_PROMPT = """You are a venture analyst evaluating a Telegram lead for a
 
 Given the lead summary and enrichment data, provide:
 1. A fit score from 1-5 (5 = excellent fit, active project with real community)
-2. A 2-sentence assessment covering: legitimacy signals, community health, and whether this project would benefit from growth/investor relations services
+2. A 1-sentence assessment (max 20 words) covering the most important signal: legitimacy, community health, or growth potential
 
 Key signals to look for:
 - Follower count vs engagement ratio (high followers with no engagement = red flag)
@@ -330,7 +330,7 @@ Key signals to look for:
 - YC, major VC backing, or notable partnerships
 
 Return ONLY valid JSON:
-{"fit_score": 4, "assessment": "Two sentence assessment here.", "key_signals": ["signal1", "signal2"]}"""
+{"fit_score": 4, "assessment": "Short one-line assessment here.", "key_signals": ["signal1", "signal2"]}"""
 
 
 def synthesize_lead(lead, enrichment):

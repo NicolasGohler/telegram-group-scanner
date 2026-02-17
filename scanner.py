@@ -7,7 +7,6 @@ identify founder intros & project announcements, and sends a digest to Slack.
 
 import asyncio
 import json
-import os
 import re
 import sys
 from datetime import datetime, timedelta, timezone
@@ -177,16 +176,6 @@ def analyze_with_gpt(group_name, messages_text):
     return response.choices[0].message.content.strip()
 
 
-def replace_msg_id_links(analysis_text, group):
-    """Replace MSG_ID:{id} placeholders with actual Telegram deep links."""
-
-    def replacer(match):
-        msg_id = match.group(1)
-        return build_telegram_link(group, msg_id)
-
-    return re.sub(r"MSG_ID:(\d+)", replacer, analysis_text)
-
-
 def send_to_slack(digest_text):
     """Send the digest to Slack."""
     client = WebClient(token=SLACK_BOT_TOKEN)
@@ -225,8 +214,6 @@ async def main():
 
     today = datetime.now(timezone.utc).strftime("%b %d, %Y")
     scan_timestamp = datetime.now(timezone.utc).isoformat()
-    digest_sections = [f"Telegram Digest -- {today}\n"]
-    skipped_count = 0
     all_leads = []
 
     for group in GROUPS:
@@ -235,7 +222,6 @@ async def main():
         print(f"   Found {len(messages)} messages")
 
         if not messages:
-            skipped_count += 1
             continue
 
         messages_text = format_messages_for_gpt(messages)
@@ -261,14 +247,6 @@ async def main():
                     "urls_in_message": extract_urls(raw_text),
                 })
 
-        analysis = replace_msg_id_links(analysis, group)
-
-        if "nothing notable" in analysis.lower():
-            skipped_count += 1
-            continue
-
-        digest_sections.append(f"{group['name']}\n{analysis}\n")
-
     await telegram.disconnect()
 
     # Write leads.json for the enricher
@@ -277,20 +255,9 @@ async def main():
         json.dump(leads_data, f, indent=2)
     print(f"\n📝 Wrote {len(all_leads)} leads to leads.json")
 
-    if skipped_count > 0:
-        channel_word = "channel" if skipped_count == 1 else "channels"
-        digest_sections.append(f"Nothing relevant in {skipped_count} other {channel_word}.")
-
-    digest = "\n".join(digest_sections)
-    print("\n--- Digest ---")
-    print(digest)
-
-    if len(digest_sections) > 2:
-        # There are actual findings (header + at least one group + skipped summary)
-        send_to_slack(digest)
-    else:
-        print("No notable findings today -- skipping detailed digest")
-        send_to_slack(f"Telegram Digest -- {today}\n\nNo notable findings today across {len(GROUPS)} groups.")
+    if not all_leads:
+        print("No notable findings — skipping digest")
+        send_to_slack(f"Telegram Digest — {today}\n\nNo notable findings across {len(GROUPS)} groups.")
 
 
 if __name__ == "__main__":
