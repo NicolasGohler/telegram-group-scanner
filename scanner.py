@@ -180,7 +180,7 @@ def send_to_slack(digest_text):
     """Send the digest to Slack."""
     client = WebClient(token=SLACK_BOT_TOKEN)
     try:
-        client.chat_postMessage(channel=SLACK_CHANNEL, text=digest_text)
+        client.chat_postMessage(channel=SLACK_CHANNEL, text=digest_text, unfurl_links=False, unfurl_media=False)
         print("✅ Digest sent to Slack")
     except SlackApiError as e:
         print(f"❌ Slack error: {e.response['error']}")

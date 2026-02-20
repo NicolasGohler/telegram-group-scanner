@@ -474,7 +474,7 @@ def send_enriched_digest(enriched_leads):
         try:
             # First chunk gets the header text as fallback
             fallback = f"Enriched Lead Digest — {len(enriched_leads)} leads"
-            client.chat_postMessage(channel=SLACK_CHANNEL, text=fallback, blocks=chunk)
+            client.chat_postMessage(channel=SLACK_CHANNEL, text=fallback, blocks=chunk, unfurl_links=False, unfurl_media=False)
         except SlackApiError as e:
             print(f"❌ Slack error: {e.response['error']}")
             raise

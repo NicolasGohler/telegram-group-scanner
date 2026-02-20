@@ -12,11 +12,13 @@
     {"id": -1002317946556, "name": "Solana Montreal"},
     {"id": -1002408788692, "name": "SuiHub Europe"},
     {"id": -1001866908095, "name": "Swiss NFT Association"},
-    {"id": -1001584995502, "name": "Web3 Montreal"}
+    {"id": -1001584995502, "name": "Web3 Montreal"},
+    {"id": -1001654199307, "name": "APAC DAO"}
   ],
   "scan_hours": 48,
   "model": "gpt-4o-mini",
   "ignore_usernames": [
-    "Helena_blur"
+    "Helena_blur",
+    "Cookiemonster1337"
   ]
 }
