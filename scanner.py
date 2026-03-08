@@ -226,6 +226,7 @@ async def main():
 
         messages_text = format_messages_for_gpt(messages)
         analysis = analyze_with_gpt(group["name"], messages_text)
+        print(f"   GPT: {analysis}")
 
         # Build a lookup of raw messages by ID for URL extraction
         messages_by_id = {m["id"]: m for m in messages}
