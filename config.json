@@ -1,18 +1,25 @@
 {
   "groups": [
-    {"id": -1002235348413, "name": "Abstract Builders"}, //pending
     {"id": -1003367799347, "name": "Crypto Horizon"},
-    {"id": -1002717818718, "name": "Genesis Frens"}, //pending
-    {"id": -1001908093554, "name": "GetFunded.Network"}, //pending
     {"id": -1001540675282, "name": "OffChain Bali"},
     {"id": -1001575943440, "name": "OffChain Global (Official)"},
-    {"id": -1002352073518, "name": "Proof of Contribution"}, //pending
-    {"id": -1002118766138, "name": "S21 Community"}, //pending
-    {"id": -1001590150062, "name": "Solana Canada"}, //pending
-    {"id": -1002317946556, "name": "Solana Montreal"}, //pending
-    {"id": -1002408788692, "name": "SuiHub Europe"}, 
-    {"id": -1001584995502, "name": "Web3 Montreal"}, //pending
-    {"id": -1001654199307, "name": "APAC DAO"}
+    {"id": -1002408788692, "name": "SuiHub Europe"},
+    {"id": -1001654199307, "name": "APAC DAO"},
+    {"id": -1001616083484, "name": "OffChain Taipei"},
+    {"id": -1001644098132, "name": "Sustainable Development - OffChain Global"},
+    {"id": -1001987508822, "name": "KOLs + Influencers Global"},
+    {"id": -1002176261823, "name": "WeAD Partners"},
+    {"id": -1003849950211, "name": "KOL Exchange"}
+  ],
+  "pending_rejoin": [
+    {"id": -1002235348413, "name": "Abstract Builders"},
+    {"id": -1002717818718, "name": "Genesis Frens"},
+    {"id": -1001908093554, "name": "GetFunded.Network"},
+    {"id": -1002352073518, "name": "Proof of Contribution"},
+    {"id": -1002118766138, "name": "S21 Community"},
+    {"id": -1001590150062, "name": "Solana Canada"},
+    {"id": -1002317946556, "name": "Solana Montreal"},
+    {"id": -1001584995502, "name": "Web3 Montreal"}
   ],
   "scan_hours": 48,
   "model": "gpt-4o-mini",
