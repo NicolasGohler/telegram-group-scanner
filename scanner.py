@@ -7,6 +7,7 @@ identify founder intros & project announcements, and sends a digest to Slack.
 
 import asyncio
 import json
+import os
 import re
 import sys
 from datetime import datetime, timedelta, timezone
@@ -17,13 +18,13 @@ from slack_sdk.errors import SlackApiError
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 
-# --- Config ---
-TELEGRAM_API_ID = 33516003
-TELEGRAM_API_HASH = "e55fb2c7bcad95849e4520ca89bdd72b"
-TELEGRAM_SESSION = "1AZWarzsBu0I8ILcKvEtUX7RmFHA42OGBzj7lK_QHb4ed6EzTfl7_d8SbXvE4RuigY5CtuXOFUixaHWGfB8j-MosgsWALkYaZMd7ZD17BILgHefiutAbImCYK3M_LhXK-fkxiwRbrugCDW8u5ssZ9qmdo6mq6zvhNYH57kZjLkTikGxn1B3YG255blRbjYtujBiKY1KdT5HV9RdBUTdooghqOoFvMP_yBV9d6uaibE3qRrlEEEf8iqTNrJkXCUxgmKTgd2LfLPGtyMZgU9n16PHMS-LOqHNjnmQ3xnigY6FsAxGDTBej8mBYT5PFNrx6VGfN4EsnP_ZO8KDn28oCnocQ9eSmKF3M="
-OPENAI_API_KEY = "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"
-SLACK_BOT_TOKEN = "xoxb-5736340339410-9698047778609-dqUa7c0cxcQyM7zdz2bcUPnm"
-SLACK_CHANNEL = "C09LV45H77D"
+# --- Config (from GitHub Actions secrets / environment) ---
+TELEGRAM_API_ID = int(os.environ["TELEGRAM_API_ID"])
+TELEGRAM_API_HASH = os.environ["TELEGRAM_API_HASH"]
+TELEGRAM_SESSION = os.environ["TELEGRAM_SESSION"]
+OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
+SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
+SLACK_CHANNEL = os.environ.get("SLACK_CHANNEL", "C09LV45H77D")
 
 with open("config.json") as f:
     CONFIG = json.load(f)

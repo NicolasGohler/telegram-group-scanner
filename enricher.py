@@ -7,6 +7,7 @@ digest to Slack using Block Kit formatting.
 """
 
 import json
+import os
 import re
 import signal
 import sys
@@ -20,11 +21,11 @@ from openai import OpenAI
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-# --- Config (same as scanner.py) ---
-OPENAI_API_KEY = "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"
-SLACK_BOT_TOKEN = "xoxb-5736340339410-9698047778609-dqUa7c0cxcQyM7zdz2bcUPnm"
-SLACK_CHANNEL = "C09LV45H77D"
-TWITTER_API_KEY = "new1_030ceefc922d4015a5394ba1a55582db"
+# --- Config (from GitHub Actions secrets / environment) ---
+OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
+SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
+SLACK_CHANNEL = os.environ.get("SLACK_CHANNEL", "C09LV45H77D")
+TWITTER_API_KEY = os.environ["TWITTER_API_KEY"]
 MODEL = "gpt-4o-mini"
 
 TIME_CEILING_SECONDS = 8 * 60  # 8 minutes hard ceiling

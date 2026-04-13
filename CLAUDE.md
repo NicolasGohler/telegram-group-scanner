@@ -28,7 +28,7 @@ scanner.py → GPT-4o-mini analysis → Slack digest (plain text)
                        → enriched_leads.json
 ```
 
-Runs daily at **9:00 CET (8:00 UTC)** on GitHub Actions, plus manual `workflow_dispatch`.
+Runs on even days (16th, 18th, etc) at **9:00 CET (8:00 UTC)** on GitHub Actions, plus manual `workflow_dispatch`.
 
 ## What Makes a Good Lead
 
@@ -85,15 +85,15 @@ These are configured in `config.json` with their numeric IDs.
 
 ## APIs & Services
 
-| Service | Purpose | Key Location |
+| Service | Purpose | Secret Name |
 |---------|---------|-------------|
-| Telegram (Telethon) | Read group messages | Hardcoded in scanner.py |
-| OpenAI (GPT-4o-mini) | Message analysis + lead synthesis | Hardcoded in scanner.py/enricher.py |
-| Slack | Digest delivery | Hardcoded, channel `C09LV45H77D` |
-| TwitterAPI.io | Profile lookup + engagement metrics | Hardcoded in enricher.py |
+| Telegram (Telethon) | Read group messages | `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `TELEGRAM_SESSION` |
+| OpenAI (GPT-4o-mini) | Message analysis + lead synthesis | `OPENAI_API_KEY` |
+| Slack | Digest delivery | `SLACK_BOT_TOKEN` (channel defaults to `C09LV45H77D`) |
+| TwitterAPI.io | Profile lookup + engagement metrics | `TWITTER_API_KEY` |
 | Discord public API | Server member counts from invite links | No key needed |
 
-All keys are hardcoded (same pattern throughout the project — not using env vars or secrets manager).
+All keys are stored as GitHub Actions secrets and read via `os.environ` at runtime.
 
 ## Related Projects
 
@@ -101,7 +101,6 @@ All keys are hardcoded (same pattern throughout the project — not using env va
 |-----------|-------------|
 | `A&GH - Fundraising Agent` | Scrapes CryptoRank/RootData fundraising data, enriches with Apollo, weekly Slack digest |
 | `A&GH - Telegram Members List` | Fetches TG group member lists with bios, exports to CSV |
-| `2W3 - Landing Page 12:05` | React landing page for the "Digital Asset Opportunity Mapper" tool |
 
 ## Key Preferences
 
