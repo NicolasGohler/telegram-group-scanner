@@ -1,0 +1,7 @@
+.env
+.venv/
+leads.json
+enriched_leads.json
+__pycache__/
+*.pyc
+.DS_Store
