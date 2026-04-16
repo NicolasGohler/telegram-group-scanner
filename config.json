@@ -3,13 +3,17 @@
     {"id": -1003367799347, "name": "Crypto Horizon"},
     {"id": -1001540675282, "name": "OffChain Bali"},
     {"id": -1001575943440, "name": "OffChain Global (Official)"},
-    {"id": -1002408788692, "name": "SuiHub Europe"},
+    {"id": -1002408788692, "name": "SuiHub Athens"},
     {"id": -1001654199307, "name": "APAC DAO"},
     {"id": -1001616083484, "name": "OffChain Taipei"},
     {"id": -1001644098132, "name": "Sustainable Development - OffChain Global"},
     {"id": -1001987508822, "name": "KOLs + Influencers Global"},
     {"id": -1002176261823, "name": "WeAD Partners"},
-    {"id": -1003849950211, "name": "KOL Exchange"}
+    {"id": -1003849950211, "name": "KOL Exchange"},
+    {"id": -1001799334123, "name": "OffChain Bangkok"},
+    {"id": -1001506174823, "name": "OffChain Hong Kong"},
+    {"id": -1001880092789, "name": "OffChain Kuala Lumpur"},
+    {"id": -1001785818669, "name": "OffChain Lisbon / Porto"}
   ],
   "pending_rejoin": [
     {"id": -1002235348413, "name": "Abstract Builders"},
