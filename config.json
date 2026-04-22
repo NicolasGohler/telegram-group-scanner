@@ -13,7 +13,11 @@
     {"id": -1001799334123, "name": "OffChain Bangkok"},
     {"id": -1001506174823, "name": "OffChain Hong Kong"},
     {"id": -1001880092789, "name": "OffChain Kuala Lumpur"},
-    {"id": -1001785818669, "name": "OffChain Lisbon / Porto"}
+    {"id": -1001785818669, "name": "OffChain Lisbon / Porto"},
+    {"id": -1002067752072, "name": "OffChain Riyadh"},
+    {"id": -1001688044043, "name": "OffChain Saigon"},
+    {"id": -1001640654034, "name": "OffChain Singapore"},
+    {"id": -1001584995502, "name": "Web3 Montreal"}
   ],
   "pending_rejoin": [
     {"id": -1002235348413, "name": "Abstract Builders"},
@@ -22,8 +26,7 @@
     {"id": -1002352073518, "name": "Proof of Contribution"},
     {"id": -1002118766138, "name": "S21 Community"},
     {"id": -1001590150062, "name": "Solana Canada"},
-    {"id": -1002317946556, "name": "Solana Montreal"},
-    {"id": -1001584995502, "name": "Web3 Montreal"}
+    {"id": -1002317946556, "name": "Solana Montreal"}
   ],
   "scan_hours": 48,
   "model": "gpt-4o-mini",

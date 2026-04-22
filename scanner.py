@@ -47,6 +47,7 @@ EXCLUDE these types of messages — they are NOT relevant:
 - Agencies selling custom/bespoke services (e.g., "we'll build your app", "hire us for marketing")
 - Generic service pitches without a distinct product
 - Price discussion, market speculation, trading signals, and token pumps/dumps
+- In-person events of any kind: meetups, conferences, side events, happy hours, dinners, workshops, hackathons, summits, co-working days, networking nights, or announcements/recaps of physical gatherings (including event invites, RSVPs, photos, and thank-you posts)
 
 DO INCLUDE B2B startups that have a scalable product, even if they mention client results or case studies. The key distinction: a startup has a product that clients use, while an agency/freelancer sells custom labor.
 
