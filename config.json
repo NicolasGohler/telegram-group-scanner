@@ -15,13 +15,13 @@
     {"id": -1002067752072, "name": "OffChain Riyadh"},
     {"id": -1001688044043, "name": "OffChain Saigon"},
     {"id": -1001640654034, "name": "OffChain Singapore"},
-    {"id": -1001584995502, "name": "Web3 Montreal"}
+    {"id": -1001584995502, "name": "Web3 Montreal"},
+    {"id": -1002352073518, "name": "Proof of Contribution"}
   ],
   "pending_rejoin": [
     {"id": -1002235348413, "name": "Abstract Builders"},
     {"id": -1002717818718, "name": "Genesis Frens"},
     {"id": -1001908093554, "name": "GetFunded.Network"},
-    {"id": -1002352073518, "name": "Proof of Contribution"},
     {"id": -1002118766138, "name": "S21 Community"},
     {"id": -1001590150062, "name": "Solana Canada"},
     {"id": -1002317946556, "name": "Solana Montreal"},
