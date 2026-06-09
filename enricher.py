@@ -92,14 +92,29 @@ def fetch_twitter_profile(username):
         data = resp.json()
         if data.get("status") != "success":
             return None
-        user = data.get("user", {})
+        # TwitterAPI.io schema: user payload lives under "data" (was "user")
+        user = data.get("data") or data.get("user") or {}
+        if not user.get("userName"):
+            return None
+
+        # Expanded website URL lives under entities.url.urls[0].expanded_url
+        website = ""
+        try:
+            url_entities = (user.get("entities", {}).get("url", {}) or {}).get("urls", [])
+            if url_entities:
+                website = url_entities[0].get("expanded_url", "") or url_entities[0].get("display_url", "")
+        except Exception:
+            pass
+        if not website:
+            website = user.get("website", "") or user.get("url", "")
+
         return {
             "username": user.get("userName", username),
             "name": user.get("name", ""),
-            "followers": user.get("followersCount", 0),
-            "following": user.get("followingCount", 0),
+            "followers": user.get("followers", user.get("followersCount", 0)) or 0,
+            "following": user.get("following", user.get("followingCount", 0)) or 0,
             "bio": user.get("description", ""),
-            "website": user.get("website", ""),
+            "website": website,
             "verified": user.get("isBlueVerified", False),
             "created_at": user.get("createdAt", ""),
         }
@@ -119,7 +134,9 @@ def fetch_twitter_engagement(username):
         )
         resp.raise_for_status()
         data = resp.json()
-        tweets = data.get("tweets", [])
+        # TwitterAPI.io schema: tweets payload lives under data.tweets (was top-level "tweets")
+        inner = data.get("data") if isinstance(data.get("data"), dict) else None
+        tweets = (inner or {}).get("tweets") or data.get("tweets") or []
         if not tweets:
             return None
 
