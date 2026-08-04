@@ -16,7 +16,9 @@
     {"id": -1001688044043, "name": "OffChain Saigon"},
     {"id": -1001640654034, "name": "OffChain Singapore"},
     {"id": -1001584995502, "name": "Web3 Montreal"},
-    {"id": -1002352073518, "name": "Proof of Contribution"}
+    {"id": -1002352073518, "name": "Proof of Contribution"},
+    {"id": -1002614384670, "name": "Stablecon"},
+    {"id": -1002551580667, "name": "stack inner circle"}
   ],
   "pending_rejoin": [
     {"id": -1002235348413, "name": "Abstract Builders"},
