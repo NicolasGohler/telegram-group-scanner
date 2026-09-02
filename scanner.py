@@ -34,6 +34,9 @@ SCAN_HOURS = CONFIG.get("scan_hours", 48)
 MODEL = CONFIG.get("model", "gpt-4o-mini")
 IGNORE_USERNAMES = {u.lower() for u in CONFIG.get("ignore_usernames", [])}
 
+SEEN_SENDERS_FILE = "seen_senders.json"
+DEDUP_DAYS = 7
+
 GPT_SYSTEM_PROMPT = """You are an analyst scanning Telegram group messages for a venture investor.
 
 From the messages provided, identify ONLY items that match these categories:
@@ -60,11 +63,6 @@ If nothing notable is found, respond with exactly: Nothing notable today
 Be selective — ignore casual chat, questions, memes, support requests, and general discussion."""
 
 
-def extract_urls(text):
-    """Extract all URLs from text using regex."""
-    return re.findall(r'https?://[^\s<>\"\'\)]+', text)
-
-
 STRUCTURED_LEADS_PROMPT = """You are given a GPT analysis of Telegram group messages and the raw messages themselves.
 
 Extract each identified lead into structured JSON. Return a JSON array where each element has:
@@ -77,6 +75,37 @@ Only include leads that appear in the analysis (not messages marked as irrelevan
 If the analysis says "Nothing notable today", return an empty array: []
 
 Return ONLY valid JSON, no markdown fences or extra text."""
+
+
+def load_seen_senders():
+    """Load the seen senders dict from disk. Returns {username_lower: date_str}."""
+    try:
+        with open(SEEN_SENDERS_FILE) as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def save_seen_senders(seen: dict, new_senders: list[str], today_str: str):
+    """Purge entries older than DEDUP_DAYS, add new senders, write to disk."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=DEDUP_DAYS)).strftime("%Y-%m-%d")
+    # Purge stale entries
+    seen = {k: v for k, v in seen.items() if v >= cutoff}
+    # Add newly surfaced senders
+    for username in new_senders:
+        seen[username.lower()] = today_str
+    with open(SEEN_SENDERS_FILE, "w") as f:
+        json.dump(seen, f, indent=2, sort_keys=True)
+    return seen
+
+
+def is_seen_this_week(username: str, seen: dict) -> bool:
+    """Return True if this sender was already surfaced within DEDUP_DAYS."""
+    date_str = seen.get(username.lower())
+    if not date_str:
+        return False
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=DEDUP_DAYS)).strftime("%Y-%m-%d")
+    return date_str >= cutoff
 
 
 def extract_structured_leads(analysis_text, messages_text, group_name):
@@ -99,7 +128,6 @@ def extract_structured_leads(analysis_text, messages_text, group_name):
         max_tokens=2000,
     )
     raw = response.choices[0].message.content.strip()
-    # Strip markdown fences if present
     if raw.startswith("```"):
         raw = re.sub(r'^```(?:json)?\s*', '', raw)
         raw = re.sub(r'\s*```$', '', raw)
@@ -116,7 +144,6 @@ def build_telegram_link(group, msg_id):
     username = group.get("username")
     if username:
         return f"https://t.me/{username}/{msg_id}"
-    # Private group: strip the -100 prefix
     raw_id = str(group_id)
     if raw_id.startswith("-100"):
         raw_id = raw_id[4:]
@@ -145,7 +172,7 @@ async def fetch_messages(client, group):
                         "id": msg.id,
                         "sender": sender_name,
                         "date": msg.date.strftime("%Y-%m-%d %H:%M"),
-                        "text": msg.text[:1000],  # truncate long messages
+                        "text": msg.text[:1000],
                     }
                 )
     except Exception as e:
@@ -179,11 +206,30 @@ def analyze_with_gpt(group_name, messages_text):
     return response.choices[0].message.content.strip()
 
 
-def send_to_slack(digest_text):
-    """Send the digest to Slack."""
+def send_digest(leads, skipped_count, today):
+    """Send the plain-text digest to Slack."""
     client = WebClient(token=SLACK_BOT_TOKEN)
+
+    if not leads:
+        text = f"Telegram Digest — {today}\n\nNo notable findings across {len(GROUPS)} groups."
+        if skipped_count:
+            text += f"\n({skipped_count} sender(s) skipped — already surfaced this week)"
+    else:
+        lines = [f"Telegram Digest — {today}", f"{len(leads)} lead(s) across {len(GROUPS)} groups\n"]
+        if skipped_count:
+            lines.append(f"_{skipped_count} sender(s) skipped — already surfaced this week_\n")
+        for lead in leads:
+            sender = lead.get("sender_username", "Unknown")
+            summary = lead.get("summary", "")
+            group = lead.get("group_name", "")
+            tg_link = lead.get("telegram_link", "")
+            lines.append(f"• @{sender}: {summary}")
+            lines.append(f"  {group} | {tg_link}")
+            lines.append("")
+        text = "\n".join(lines).strip()
+
     try:
-        client.chat_postMessage(channel=SLACK_CHANNEL, text=digest_text, unfurl_links=False, unfurl_media=False)
+        client.chat_postMessage(channel=SLACK_CHANNEL, text=text, unfurl_links=False, unfurl_media=False)
         print("✅ Digest sent to Slack")
     except SlackApiError as e:
         print(f"❌ Slack error: {e.response['error']}")
@@ -199,11 +245,14 @@ def send_error_to_slack(error_msg):
             text=f"⚠️ Telegram Scanner Error:\n```{error_msg}```",
         )
     except Exception:
-        pass  # best-effort
+        pass
 
 
 async def main():
     print(f"🔍 Starting Telegram scan — looking back {SCAN_HOURS}h")
+
+    seen_senders = load_seen_senders()
+    print(f"   Loaded {len(seen_senders)} seen sender(s) from the last {DEDUP_DAYS} days")
 
     telegram = TelegramClient(
         StringSession(TELEGRAM_SESSION), TELEGRAM_API_ID, TELEGRAM_API_HASH
@@ -216,8 +265,10 @@ async def main():
         sys.exit(1)
 
     today = datetime.now(timezone.utc).strftime("%b %d, %Y")
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     scan_timestamp = datetime.now(timezone.utc).isoformat()
     all_leads = []
+    skipped_count = 0
 
     for group in GROUPS:
         print(f"\n  Scanning: {group['name']}")
@@ -231,37 +282,45 @@ async def main():
         analysis = analyze_with_gpt(group["name"], messages_text)
         print(f"   GPT: {analysis}")
 
-        # Build a lookup of raw messages by ID for URL extraction
         messages_by_id = {m["id"]: m for m in messages}
 
-        # Extract structured leads before replacing MSG_IDs with links
         if "nothing notable" not in analysis.lower():
             structured = extract_structured_leads(analysis, messages_text, group["name"])
             for lead in structured:
                 msg_id = lead.get("message_id")
+                sender = lead.get("sender_username", "Unknown")
+
+                if is_seen_this_week(sender, seen_senders):
+                    print(f"   ⏭️  Skipping @{sender} — already surfaced this week")
+                    skipped_count += 1
+                    continue
+
                 raw_msg = messages_by_id.get(int(msg_id)) if msg_id else None
                 raw_text = raw_msg["text"] if raw_msg else lead.get("relevant_message_text", "")
                 all_leads.append({
                     "id": f"{group['name']}_{msg_id}",
                     "group_name": group["name"],
-                    "sender_username": lead.get("sender_username", "Unknown"),
+                    "sender_username": sender,
                     "message_text": raw_text,
                     "summary": lead.get("summary", ""),
                     "telegram_link": build_telegram_link(group, msg_id) if msg_id else "",
-                    "urls_in_message": extract_urls(raw_text),
                 })
 
     await telegram.disconnect()
 
-    # Write leads.json for the enricher
+    # Write leads.json
     leads_data = {"scan_date": scan_timestamp, "leads": all_leads}
     with open("leads.json", "w") as f:
         json.dump(leads_data, f, indent=2)
     print(f"\n📝 Wrote {len(all_leads)} leads to leads.json")
 
-    if not all_leads:
-        print("No notable findings — skipping digest")
-        send_to_slack(f"Telegram Digest — {today}\n\nNo notable findings across {len(GROUPS)} groups.")
+    # Update seen senders
+    new_senders = [lead["sender_username"] for lead in all_leads]
+    save_seen_senders(seen_senders, new_senders, today_str)
+    print(f"📋 Updated seen_senders.json (+{len(new_senders)} new)")
+
+    # Send digest
+    send_digest(all_leads, skipped_count, today)
 
 
 if __name__ == "__main__":
