@@ -29,6 +29,7 @@ jobs:
           TELEGRAM_SESSION: ${{ secrets.TELEGRAM_SESSION }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
 
       - name: Persist seen senders
         run: |
