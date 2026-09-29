@@ -213,11 +213,11 @@ def send_digest(leads, skipped_count, today):
     if not leads:
         text = f"Telegram Digest — {today}\n\nNo notable findings across {len(GROUPS)} groups."
         if skipped_count:
-            text += f"\n({skipped_count} sender(s) skipped — already surfaced this week)"
+            text += f"\n({skipped_count} unique sender(s) skipped — seen in a previous run this week)"
     else:
         lines = [f"Telegram Digest — {today}", f"{len(leads)} lead(s) across {len(GROUPS)} groups\n"]
         if skipped_count:
-            lines.append(f"_{skipped_count} sender(s) skipped — already surfaced this week_\n")
+            lines.append(f"_{skipped_count} unique sender(s) skipped — seen in a previous run this week_\n")
         for lead in leads:
             sender = lead.get("sender_username", "Unknown")
             summary = lead.get("summary", "")
@@ -268,6 +268,7 @@ async def main():
     today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     scan_timestamp = datetime.now(timezone.utc).isoformat()
     all_leads = []
+    seen_this_run = set()
     skipped_count = 0
 
     for group in GROUPS:
@@ -290,11 +291,12 @@ async def main():
                 msg_id = lead.get("message_id")
                 sender = lead.get("sender_username", "Unknown")
 
-                if is_seen_this_week(sender, seen_senders):
+                if is_seen_this_week(sender, seen_senders) or sender.lower() in seen_this_run:
                     print(f"   ⏭️  Skipping @{sender} — already surfaced this week")
                     skipped_count += 1
                     continue
 
+                seen_this_run.add(sender.lower())
                 raw_msg = messages_by_id.get(int(msg_id)) if msg_id else None
                 raw_text = raw_msg["text"] if raw_msg else lead.get("relevant_message_text", "")
                 all_leads.append({
