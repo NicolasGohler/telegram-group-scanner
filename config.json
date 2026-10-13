@@ -18,7 +18,8 @@
     {"id": -1001584995502, "name": "Web3 Montreal"},
     {"id": -1002352073518, "name": "Proof of Contribution"},
     {"id": -1002614384670, "name": "Stablecon"},
-    {"id": -1002551580667, "name": "stack inner circle"}
+    {"id": -1002551580667, "name": "stack inner circle"},
+    {"id": -1001644363671, "name": "Web3 Founders", "username": "web3builders"}
   ],
   "pending_rejoin": [
     {"id": -1002235348413, "name": "Abstract Builders"},
