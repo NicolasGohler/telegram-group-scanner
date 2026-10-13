@@ -18,6 +18,8 @@ from slack_sdk.errors import SlackApiError
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 
+import people_db
+
 # --- Config (from GitHub Actions secrets / environment) ---
 TELEGRAM_API_ID = int(os.environ["TELEGRAM_API_ID"])
 TELEGRAM_API_HASH = os.environ["TELEGRAM_API_HASH"]
@@ -172,6 +174,7 @@ async def fetch_messages(client, group):
                         "id": msg.id,
                         "sender": sender_name,
                         "date": msg.date.strftime("%Y-%m-%d %H:%M"),
+                        "sent_at": msg.date.strftime("%Y-%m-%dT%H:%M:%S"),
                         "text": msg.text[:1000],
                     }
                 )
@@ -271,10 +274,34 @@ async def main():
     seen_this_run = set()
     skipped_count = 0
 
+    db_conn = people_db.init_db()
+
     for group in GROUPS:
         print(f"\n  Scanning: {group['name']}")
         messages = await fetch_messages(telegram, group)
         print(f"   Found {len(messages)} messages")
+
+        # Write every qualifying message to the people database
+        db_new = 0
+        for m in messages:
+            try:
+                added = people_db.upsert_message(
+                    db_conn,
+                    username=m["sender"],
+                    group_id=group["id"],
+                    group_name=group["name"],
+                    message_id=m["id"],
+                    text=m["text"],
+                    telegram_link=build_telegram_link(group, m["id"]),
+                    sent_at=m["sent_at"],
+                )
+                if added:
+                    db_new += 1
+            except Exception:
+                pass
+        if db_new:
+            db_conn.commit()
+            print(f"   +{db_new} new message(s) written to people.db")
 
         if not messages:
             continue
@@ -309,6 +336,7 @@ async def main():
                 })
 
     await telegram.disconnect()
+    db_conn.close()
 
     # Write leads.json
     leads_data = {"scan_date": scan_timestamp, "leads": all_leads}
